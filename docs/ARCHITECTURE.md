@@ -1,491 +1,245 @@
 # AI Learning OS - System Architecture
 
-# 1. Vision
+## 1. Vision
 
-AI Learning OS is a long-term personal platform that combines learning, research, note-taking, AI assistance, project management, and knowledge management into one intelligent system.
+AI Learning OS is a long-term personal platform that unifies learning, research,
+note-taking, AI assistance, project management, and knowledge management into a single
+system. It is meant to be used daily for years, not demoed once and abandoned: so the
+architecture is optimized for modularity and long-term maintainability over short-term
+build speed.
 
-The architecture must be modular, scalable, maintainable, and easy to extend.
+## 2. Architecture Style
 
----
-
-# 2. Architecture Style
-
-The project follows **Clean Architecture** with a layered design.
+The project follows **Clean Architecture** with strict layering: each layer only
+depends on the layer directly beneath it, and business logic never depends on the web
+framework or database driver directly. Concretely, every feature (notes, tasks,
+flashcards, etc.) is organized as its own module, and each module follows the same
+internal layering:
 
 ```
-                    Frontend (Next.js)
-
-                            │
-
-                    API Gateway (FastAPI)
-
-                            │
-
-                ---------------------------
-                |                         |
-         Authentication            Application APIs
-                |                         |
-                ---------------------------
-                            │
-                    Service Layer
-                            │
-        ----------------------------------------
-        |          |          |                |
-    Notes      Projects    Learning       AI Services
-                              |
-                    Repository Layer
-                            │
-          PostgreSQL      Vector DB     File Storage
-                            │
-                    External AI Services
+Router            → HTTP request/response handling only
+   ↓
+Service           → business logic, orchestration
+   ↓
+Repository        → database queries for this module
+   ↓
+Database          → PostgreSQL
 ```
 
----
+At the system level, this looks like:
 
-# 3. Major Components
+```
+        ┌─────────────────────────────────────────────┐
+        │              Frontend (Next.js)             │
+        └───────────────────────┬─────────────────────┘
+                                │ REST API
+        ┌───────────────────────▼──────────────────────────┐
+        │           API Gateway / FastAPI App              │
+        │   ┌───────────────┐        ┌──────────────────┐  │
+        │   │ Authentication│        │ Domain Modules   │  │
+        │   └───────────────┘        │ (notes, tasks,   │  │
+        │                            │  flashcards...)  │  │
+        │                            └────────┬─────────┘  │
+        └─────────────────────────────────────┼────────────┘
+                                              │
+                         ┌────────────────────┼───────────────────────┐
+                         │                    │                       │
+                 ┌───────▼──────┐   ┌─────────▼─────────┐   ┌─────────▼────────┐
+                 │  PostgreSQL  │   │   Vector Store    │   │   File Storage   │
+                 │(relational)  │   │ (FAISS → Qdrant)  │   │  (PDFs, images)  │
+                 └──────────────┘   └───────────────────┘   └──────────────────┘
+                                            │
+                                  ┌─────────▼──────────┐
+                                  │  External AI APIs  │
+                                  │ (LLMs, embeddings) │
+                                  └────────────────────┘
+```
 
-## Frontend
+Why this shape matters: a request from the frontend always passes through a router,
+then a service, then a repository, before it ever touches data. This means business
+logic can be unit-tested without a running database, and the database or AI provider
+can be swapped without rewriting the modules that use them.
 
-Responsibilities
+## 3. Major Components
 
-* User Interface
-* Dashboard
-* Rich Text Editor
-* Project Management
-* Charts
-* Knowledge Graph
-* AI Chat
-* Settings
+### Frontend
 
-Technology
+Handles the user-facing experience: dashboard, rich text editor, project boards,
+charts, the knowledge graph view, and the AI chat interface.
 
-* Next.js
-* React
-* Tailwind CSS
-* TanStack Query
-* React Flow
-* Chart.js
+- **Next.js + React**: application framework
+- **Tailwind CSS**: styling
+- **TanStack Query**: server state and caching
+- **React Flow**: knowledge graph visualization
+- **Chart.js**: analytics charts
 
----
+### Backend
 
-## Backend
+Exposes the REST API, enforces authentication/authorization, runs business logic, and
+schedules background work (PDF processing, embedding generation).
 
-Responsibilities
+- **FastAPI**: async web framework
+- **SQLAlchemy 2.0 (async)**: ORM
+- **Alembic**: database migrations
+- **Pydantic**: request/response validation
+- **JWT**: authentication tokens
+- **Redis**: caching and Celery broker
+- **Celery**: background task queue
 
-* REST APIs
-* Authentication
-* Authorization
-* Business Logic
-* Validation
-* Background Tasks
+### Primary Database: PostgreSQL
 
-Technology
+Stores all structured, relational data: users, notes, projects, tasks, flashcards,
+quizzes, study sessions, categories, and tags. See `ER_DIAGRAM.md` for the full schema.
 
-* FastAPI
-* SQLAlchemy
-* Alembic
-* Pydantic
-* JWT
-* Redis
+### Vector Database
 
----
+Stores document embeddings for semantic search and RAG retrieval.
 
-## Database
+- **Phase 5 onward:** FAISS (in-process, file-backed no extra infrastructure needed
+  for a single-user system)
+- **Migration trigger:** once per-user metadata filtering or 100k+ vectors are needed,
+  migrate to **Qdrant**
 
-Primary Database
+### File Storage
 
-PostgreSQL
+Stores uploaded PDFs, images, videos, and research papers on local disk during early
+phases, with a planned migration to S3-compatible storage once the system needs to run
+outside a single machine.
 
-Stores
+## 4. AI Layer
 
-* Users
-* Notes
-* Projects
-* Tasks
-* Flashcards
-* Analytics
-* Study Sessions
-* Categories
-* Tags
+The AI layer is organized as a set of independent services, each with a narrow
+responsibility, so any one of them can be upgraded or replaced (e.g. swapping the
+embedding model) without touching the rest of the system.
 
----
+| Service | Responsibility |
+|---|---|
+| Document Processing | OCR, text extraction, chunking |
+| Embedding Service | Generate and store vector embeddings |
+| RAG Service | Retrieve relevant chunks, re-rank, generate an answer with citations |
+| Quiz Service | Generate quiz questions from document chunks |
+| Flashcard Service | Generate spaced-repetition flashcards from content |
+| Recommendation Service | Suggest topics or content based on study history |
+| Knowledge Graph Service | Detect relationships between concepts, build the graph |
+| Analytics Service | Surface study insights and weak topics |
 
-## Vector Database
+Each service is called by domain modules through a defined interface domain modules
+never reach into AI internals directly (see `CODING_STANDARDS.md`, Section 2).
 
-Initially
-
-FAISS
-
-Later
-
-* Qdrant
-* Weaviate
-
-Stores
-
-* Embeddings
-* Semantic Search Index
-* Document Chunks
-
----
-
-## File Storage
-
-Stores
-
-* PDFs
-* Images
-* Videos
-* Attachments
-* Research Papers
-
-Future
-
-S3 Compatible Storage
-
----
-
-# 4. AI Layer
-
-Contains independent AI modules.
-
-Examples
-
-Document Service
-
-* OCR
-* Parsing
-* Chunking
-
-Embedding Service
-
-* Generate embeddings
-* Store vectors
-
-RAG Service
-
-* Retrieve
-* Re-rank
-* Generate answer
-
-Quiz Service
-
-* Generate quizzes
-
-Flashcard Service
-
-* Generate flashcards
-
-Recommendation Service
-
-* Recommend topics
-
-Knowledge Graph Service
-
-* Detect relationships
-* Build graph
-
-Analytics Service
-
-* Study insights
-* Weak topics
-
-Each service should work independently.
-
----
-
-# 5. Folder Structure
+## 5. Folder Structure
 
 ```
 ai-learning-os/
-
-app/
-frontend/
-
-backend/
-
-api/
-
-core/
-
-config/
-
-database/
-
-models/
-
-schemas/
-
-repositories/
-
-services/
-
-ai/
-
-rag/
-
-embeddings/
-
-knowledge_graph/
-
-recommendation/
-
-analytics/
-
-notes/
-
-projects/
-
-study/
-
-research/
-
-tasks/
-
-flashcards/
-
-experiments/
-
-search/
-
-documents/
-
-storage/
-
-tests/
-
-docs/
-
-docker/
-
-scripts/
-
+├── backend/
+│   ├── main.py
+│   ├── core/              # security, logging, exceptions, shared dependencies
+│   ├── config/             # settings (env-driven)
+│   ├── database/             # session management, base ORM class
+│   ├── shared/                 # pagination, common schemas, utilities
+│   ├── modules/                  # one folder per domain feature
+│   │   ├── auth/
+│   │   ├── notes/
+│   │   ├── projects/
+│   │   ├── tasks/
+│   │   ├── study/
+│   │   ├── flashcards/
+│   │   ├── research/
+│   │   ├── documents/
+│   │   ├── search/
+│   │   └── experiments/
+│   │       # each module: router.py, service.py, repository.py,
+│   │       # schemas.py, models.py, tests/
+│   ├── ai/                          # independent AI services
+│   │   ├── embeddings/
+│   │   ├── rag/
+│   │   ├── knowledge_graph/
+│   │   ├── recommendation/
+│   │   ├── analytics/
+│   │   ├── quiz/
+│   │   └── document_processing/
+│   └── tests/                          # cross-module test suites
+├── frontend/
+├── docs/
+├── docker/
+└── scripts/
 ```
 
----
+This is implemented as real directories under `backend/`, not just a planning diagram
+— see the Phase 0 deliverable for the live scaffold.
 
-# 6. Core Modules
+## 6. Core Modules
 
-Authentication
+Authentication, Notes, Projects, Research Papers, PDF Library, Flashcards, Quiz,
+Knowledge Graph, AI Chat, Semantic Search, Learning Planner, Learning Analytics,
+Experiment Tracker, Settings, Notifications.
 
-Notes
+## 7. Data Flow Pipelines
 
-Projects
+### AI Document Pipeline (Phase 4–6)
 
-Research Papers
+```
+PDF Upload → Text Extraction → Cleaning → Chunking
+   → Embedding → Vector Database → Retrieval → LLM → Answer
+```
 
-PDF Library
+### Search Pipeline (Phase 5)
 
-Flashcards
+```
+User Query → Keyword Search ─┐
+            → Semantic Search ─┴→ Merge Results → Rank → Return
+```
 
-Quiz
+### Learning Pipeline (ongoing)
 
-Knowledge Graph
+```
+Study Session → Save Session → Generate Statistics
+   → Update Weak Topics → Update Planner → Generate Recommendations
+```
 
-AI Chat
+## 8. Finalized Technical Decisions
 
-Semantic Search
+The following were left open in earlier planning and are now locked in. Full reasoning
+for each is in `ARCHITECTURE_DECISIONS.md`.
 
-Learning Planner
+| Decision Area | Choice |
+|---|---|
+| Module layout | Domain-modular (one folder per feature, not one global layer) |
+| ORM mode | SQLAlchemy 2.0, async, via `asyncpg` |
+| Background jobs | Celery + Redis |
+| Vector DB (now) | FAISS |
+| Vector DB (later) | Qdrant, once filtering/scale requires it |
+| Embedding model | `all-MiniLM-L6-v2` (384-dim) |
+| Authentication | JWT access + refresh tokens, multi-tenant-ready schema from day one |
+| Migrations | Alembic, single linear history |
 
-Learning Analytics
+## 9. Future AI Modules (not yet built)
 
-Experiment Tracker
+Recommendation Engine, Knowledge Graph, Research Assistant, AI Tutor, Experiment
+Analysis, Learning Analytics, Voice Assistant, Offline Local LLM, Multimodal Search.
 
-Settings
+These are deliberately deferred: see `ER_DIAGRAM.md` for why their database schemas
+aren't modeled yet.
 
-Notifications
+## 10. Development Rules
 
----
+- Every new feature must be independent, reusable, documented, tested, and modular.
+- AI logic must never be tightly coupled to business logic: domain modules call AI
+  services through a defined interface, never the reverse.
+- Database queries must never appear inside API routes: always go through a service
+  and repository.
+- Always use service classes; never put business logic directly in route handlers.
 
-# 7. Database Modules
+Full enforceable rules (linting, layering, testing, definition of done) are in
+`CODING_STANDARDS.md`.
 
-User
+## 11. Design Principles
 
-↓
+SOLID · DRY · KISS · Separation of Concerns · Dependency Injection where appropriate ·
+Clean Code · Domain-Driven Thinking
 
-Study Session
+## 12. Long-Term Goal
 
-↓
-
-Project
-
-↓
-
-Task
-
-↓
-
-Note
-
-↓
-
-Document
-
-↓
-
-Embedding
-
-↓
-
-Flashcard
-
-↓
-
-Quiz
-
-↓
-
-Analytics
-
-Each module should be loosely coupled.
-
----
-
-# 8. AI Pipeline
-
-PDF Upload
-
-↓
-
-Text Extraction
-
-↓
-
-Cleaning
-
-↓
-
-Chunking
-
-↓
-
-Embedding
-
-↓
-
-Vector Database
-
-↓
-
-Retrieval
-
-↓
-
-LLM
-
-↓
-
-Answer
-
----
-
-# 9. Search Pipeline
-
-User Query
-
-↓
-
-Keyword Search
-
-↓
-
-Semantic Search
-
-↓
-
-Merge Results
-
-↓
-
-Rank
-
-↓
-
-Return
-
----
-
-# 10. Learning Pipeline
-
-Study
-
-↓
-
-Save Session
-
-↓
-
-Generate Statistics
-
-↓
-
-Update Weak Topics
-
-↓
-
-Update Planner
-
-↓
-
-Generate Recommendations
-
----
-
-# 11. Future AI Modules
-
-Recommendation Engine
-
-Knowledge Graph
-
-Research Assistant
-
-AI Tutor
-
-Experiment Analysis
-
-Learning Analytics
-
-Voice Assistant
-
-Offline Local LLM
-
-Multimodal Search
-
----
-
-# 12. Development Rules
-
-Every new feature should be:
-
-* Independent
-* Reusable
-* Documented
-* Tested
-* Modular
-
-Never tightly couple AI logic with business logic.
-
-Never place database queries inside API routes.
-
-Always use service classes.
-
----
-
-# 13. Design Principles
-
-* SOLID
-* DRY
-* KISS
-* Separation of Concerns
-* Dependency Injection where appropriate
-* Clean Code
-* Domain Driven Thinking
-
----
-
-# 14. Long-Term Goal
-
-The project should continue evolving for years.
-
-Every technology learned should become a new module rather than requiring major architectural changes.
+The system should keep evolving for years without requiring a major rewrite. Every new
+technology learned should become a new, independent module rather than forcing a
+redesign of the existing architecture: this is the test every new feature should be
+held to before being added.
