@@ -2,7 +2,7 @@
 
 # Estimated Timeline
 
-Approximately **8–12 months** while studying part-time.
+Approximately **8-12 months** while studying part-time.
 
 The roadmap is flexible. Quality is more important than speed.
 
@@ -35,7 +35,7 @@ Deliverables
 
 Duration
 
-2–3 Weeks
+2-3 Weeks
 
 Learn
 

@@ -9,7 +9,7 @@ This is not a portfolio project or a clone of an existing tool - see
 ## Documentation
 
 - `docs/ARCHITECTURE.md` - system architecture and component overview
-- `docs/PROJECT_ROADMAP.md` - phase-by-phase build plan (8–12 months)
+- `docs/PROJECT_ROADMAP.md` - phase-by-phase build plan (8-12 months)
 - `docs/ARCHITECTURE_DECISIONS.md` - finalized technical decisions (ADRs)
 - `docs/ER_DIAGRAM.md` - database schema and entity relationships
 - `docs/CODING_STANDARDS.md` - enforceable coding rules and definition of done
