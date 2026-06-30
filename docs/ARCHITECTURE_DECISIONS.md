@@ -1,11 +1,11 @@
-# Architecture Decision Record (ADR) — Phase 0
+# Architecture Decision Record (ADR) - Phase 0
 
 This document finalizes the technical decisions that ARCHITECTURE.md leaves open.
 Each decision includes the reasoning so it can be revisited later without losing context.
 
 ---
 
-## ADR-001: Module Organization — Domain-Modular, Not Layer-Global
+## ADR-001: Module Organization - Domain-Modular, Not Layer-Global
 
 **Decision:** Organize the backend by *domain module* (notes, projects, tasks, study,
 flashcards, research, documents, search, experiments, auth), where each module owns its
@@ -14,7 +14,7 @@ infrastructure (`core/`, `config/`, `database/`, `shared/`) sits at the top leve
 
 **Why:** The original folder sketch in ARCHITECTURE.md grouped files by technical layer
 globally (one giant `api/`, one giant `services/`, etc.). That works for small projects
-but becomes hard to navigate once you have 10+ modules — you end up jumping between five
+but becomes hard to navigate once you have 10+ modules - you end up jumping between five
 top-level folders to understand one feature. Domain-modular structure means everything
 about "flashcards" lives in one place. This is the standard pattern for FastAPI projects
 that are expected to grow for years (your stated goal), and it maps directly onto Clean
@@ -43,13 +43,13 @@ and async backend skills are part of your stated goals.
 
 ---
 
-## ADR-003: Background Jobs — Celery + Redis
+## ADR-003: Background Jobs - Celery + Redis
 
 **Decision:** Use Celery with Redis as the broker/result backend for background tasks
 (PDF OCR, embedding generation, flashcard generation).
 
 **Why:** FastAPI's built-in `BackgroundTasks` runs in-process and dies if the server
-restarts mid-job — unacceptable for a multi-minute OCR job on a large PDF. Celery gives
+restarts mid-job - unacceptable for a multi-minute OCR job on a large PDF. Celery gives
 you retries, task status tracking, and scheduled jobs (useful later for spaced-repetition
 review reminders in Phase 8 and the AI Planner in Phase 12). Redis is already in your
 stack for caching, so it doesn't add a new dependency.
@@ -60,13 +60,13 @@ documented for a solo learner debugging issues without a team.
 
 ---
 
-## ADR-004: Vector Database — FAISS for Phase 5, Qdrant Migration in Phase 9+
+## ADR-004: Vector Database - FAISS for Phase 5, Qdrant Migration in Phase 9+
 
 **Decision:** Start with FAISS (in-process, file-backed) for Phase 5 semantic search.
 Plan a migration to Qdrant once per-user metadata filtering becomes necessary
 (Knowledge Graph phase or multi-user scenario).
 
-**Why:** FAISS has no native metadata filtering or persistence server — every query
+**Why:** FAISS has no native metadata filtering or persistence server - every query
 searches the whole index unless you pre-filter manually. That's fine for a single-user
 system with a few thousand documents in Phase 5. Qdrant adds operational overhead
 (separate service, Docker container) that isn't justified until your vector count or
@@ -77,13 +77,13 @@ project/category at the same time as similarity search, or exceed roughly 100k v
 
 ---
 
-## ADR-005: Embedding Model — `sentence-transformers/all-MiniLM-L6-v2` (384-dim)
+## ADR-005: Embedding Model - `sentence-transformers/all-MiniLM-L6-v2` (384-dim)
 
 **Decision:** Use `all-MiniLM-L6-v2` as the default embedding model for Phase 5.
 
 **Why:** It's small enough to run locally on CPU (no GPU dependency, no API cost), has
 a well-understood 384-dimension output (fixes your `embeddings.vector` column width
-now), and is the standard teaching example for sentence-transformers — useful since
+now), and is the standard teaching example for sentence-transformers - useful since
 you're learning the underlying theory, not just calling an API. The embedding service is
 designed as a swappable module (ADR-001), so upgrading to a larger model (e.g.
 `bge-base-en`, 768-dim) later only requires a migration, not an architecture change.
@@ -94,7 +94,7 @@ documented as a known cost.
 
 ---
 
-## ADR-006: Authentication — JWT with Refresh Tokens, Single-User-First
+## ADR-006: Authentication - JWT with Refresh Tokens, Single-User-First
 
 **Decision:** Build standard JWT access/refresh token auth in Phase 1, but design the
 `users` table and all foreign keys as if multi-user is possible later, even though you
@@ -107,13 +107,13 @@ and avoids a rewrite if you ever add collaborators, share the platform, or open-
 
 ---
 
-## ADR-007: Migrations — Alembic, One Linear History
+## ADR-007: Migrations - Alembic, One Linear History
 
 **Decision:** Use Alembic with autogenerate for migrations, one linear revision history
 (no branching) since this is a single-developer project.
 
 **Why:** Standard with SQLAlchemy, already listed in your stack. Linear history keeps
-things simple — branching migrations only matter with multiple parallel feature branches
+things simple - branching migrations only matter with multiple parallel feature branches
 merging concurrently, which doesn't apply here.
 
 ---

@@ -8,7 +8,7 @@ The roadmap is flexible. Quality is more important than speed.
 
 ---
 
-# Phase 0 — Planning
+# Phase 0 - Planning
 
 Duration
 
@@ -31,7 +31,7 @@ Deliverables
 
 ---
 
-# Phase 1 — Foundation
+# Phase 1 - Foundation
 
 Duration
 
@@ -59,7 +59,7 @@ Working backend.
 
 ---
 
-# Phase 2 — Notes System
+# Phase 2 - Notes System
 
 Duration
 
@@ -83,7 +83,7 @@ Challenges
 
 ---
 
-# Phase 3 — Project Management
+# Phase 3 - Project Management
 
 Duration
 
@@ -102,7 +102,7 @@ Learning Analytics
 
 ---
 
-# Phase 4 — Document Library
+# Phase 4 - Document Library
 
 Duration
 
@@ -124,7 +124,7 @@ Background processing
 
 ---
 
-# Phase 5 — Semantic Search
+# Phase 5 - Semantic Search
 
 Duration
 
@@ -152,7 +152,7 @@ Embedding quality
 
 ---
 
-# Phase 6 — AI Chat (RAG)
+# Phase 6 - AI Chat (RAG)
 
 Duration
 
@@ -176,7 +176,7 @@ Prompt Engineering
 
 ---
 
-# Phase 7 — AI Tutor
+# Phase 7 - AI Tutor
 
 Duration
 
@@ -191,7 +191,7 @@ Build
 
 ---
 
-# Phase 8 — Flashcards
+# Phase 8 - Flashcards
 
 Duration
 
@@ -209,7 +209,7 @@ Scheduling algorithm
 
 ---
 
-# Phase 9 — Knowledge Graph
+# Phase 9 - Knowledge Graph
 
 Duration
 
@@ -235,7 +235,7 @@ Visualization
 
 ---
 
-# Phase 10 — Learning Analytics
+# Phase 10 - Learning Analytics
 
 Duration
 
@@ -255,7 +255,7 @@ Predictions
 
 ---
 
-# Phase 11 — Experiment Tracker
+# Phase 11 - Experiment Tracker
 
 Duration
 
@@ -275,7 +275,7 @@ Training History
 
 ---
 
-# Phase 12 — AI Planner
+# Phase 12 - AI Planner
 
 Duration
 
@@ -293,7 +293,7 @@ Daily Schedule
 
 ---
 
-# Phase 13 — Research Workspace
+# Phase 13 - Research Workspace
 
 Duration
 
@@ -311,7 +311,7 @@ Reading Tracker
 
 ---
 
-# Phase 14 — Optimization
+# Phase 14 - Optimization
 
 Duration
 
