@@ -48,11 +48,11 @@ At the system level, this looks like:
                  │  PostgreSQL  │   │   Vector Store    │   │   File Storage   │
                  │(relational)  │   │ (FAISS → Qdrant)  │   │  (PDFs, images)  │
                  └──────────────┘   └───────────────────┘   └──────────────────┘
-                                            │
-                                  ┌─────────▼──────────┐
-                                  │  External AI APIs  │
-                                  │ (LLMs, embeddings) │
-                                  └────────────────────┘
+                                              │
+                                    ┌─────────▼──────────┐
+                                    │  External AI APIs  │
+                                    │ (LLMs, embeddings) │
+                                    └────────────────────┘
 ```
 
 Why this shape matters: a request from the frontend always passes through a router,
