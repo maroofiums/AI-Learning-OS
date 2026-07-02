@@ -1,19 +1,30 @@
+# --- Web framework ---
 fastapi
 uvicorn[standard]
-sqlalchemy>=2.0
-asyncpg
-alembic
+ 
+# --- Settings & validation ---
 pydantic
 pydantic-settings
+ 
+# --- Database (async SQLAlchemy 2.0 + asyncpg, per Phase 0 decision) ---
+sqlalchemy[asyncio]
+asyncpg
+alembic
+greenlet         # required by SQLAlchemy async under Alembic/sync contexts
+ 
+# --- Auth ---
 python-jose[cryptography]
 passlib[bcrypt]
-redis
+ 
+# --- Background jobs (Celery + Redis, per Phase 0 decision) ---
 celery
-faiss-cpu
-sentence-transformers
+redis
+ 
+# --- Testing ---
 pytest
 pytest-asyncio
 httpx
-ruff
-black
-mypy
+ 
+# --- Utility ---
+python-dotenv
+ 
